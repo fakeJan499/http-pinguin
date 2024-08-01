@@ -7,6 +7,7 @@ declare module 'bun' {
         FIREBASE_API_KEY: string;
         FIREBASE_DB_URL: string;
         FIREBASE_DB_PING_DEF_TABLE_PATH: string;
+        LOG: 'ALL' | 'ERROR' | 'NONE';
     }
 }
 
@@ -55,8 +56,22 @@ const startContinuousPing = (pingPath: PingPath) =>
         tap(logRequestResult),
     );
 
-const logRequestResult = (response: Response) =>
-    console.log(`[${response.status}] ${response.url}`);
+const logRequestResult = (response: Response) => {
+    if (Bun.env.LOG === 'NONE' || (Bun.env.LOG === 'ERROR' && response.ok)) {
+        return;
+    }
+
+    console.log(`[${getLogTimestamp()}] {${response.status}} ${response.url}`);
+};
+
+const getLogTimestamp = () => {
+    const date = new Date();
+    const isoDate = date.toISOString();
+    const offset = date.getTimezoneOffset() / 60;
+    const offsetString = offset < 0 ? `-${Math.abs(offset)}` : `+${offset}`;
+
+    return `${isoDate}${offsetString}`;
+};
 
 watchPaths()
     .pipe(
